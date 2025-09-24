@@ -1,0 +1,42 @@
+#include <Servo.h>
+#include <EEPROM.h>
+
+#define PLAY_BUTTON 2
+#define SERVO_COUNT 6
+#define MAX_STEPS 10
+
+Servo servos[SERVO_COUNT];
+int servoPins[SERVO_COUNT] = {3, 5, 6, 9, 10, 11};
+
+int recordedAngles[MAX_STEPS][SERVO_COUNT];
+int stepCount = 0;
+
+void setup() {
+  pinMode(PLAY_BUTTON, INPUT_PULLUP);
+
+  for (int i = 0; i < SERVO_COUNT; i++) {
+    servos[i].attach(servoPins[i]);
+    servos[i].write(90); // Start at center
+  }
+
+  // Load recorded movements from EEPROM
+  stepCount = EEPROM.read(MAX_STEPS * SERVO_COUNT);
+  for (int s = 0; s < stepCount; s++) {
+    for (int i = 0; i < SERVO_COUNT; i++) {
+      recordedAngles[s][i] = EEPROM.read(s * SERVO_COUNT + i);
+    }
+  }
+}
+
+void loop() {
+  // If Play button is pressed → replay movements
+  if (digitalRead(PLAY_BUTTON) == LOW) {
+    delay(300); // debounce
+    for (int s = 0; s < stepCount; s++) {
+      for (int i = 0; i < SERVO_COUNT; i++) {
+        servos[i].write(recordedAngles[s][i]);
+      }
+      delay(1000); // wait before next step
+    }
+  }
+}
